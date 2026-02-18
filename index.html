@@ -27,9 +27,17 @@
             <span id="statusMessage" class="value">Oyuncu taşını seç, sonra hareket et.</span>
           </div>
         </div>
-        <button id="helpButton" class="help-button" type="button" aria-label="Nasıl oynanır">
-          ?
-        </button>
+        <div class="top-actions">
+          <button id="helpButton" class="help-button" type="button" aria-label="Nasıl oynanır">
+            ?
+          </button>
+          <button id="settingsButton" class="help-button" type="button" aria-label="Ayarlar">
+            ⚙️
+          </button>
+          <button id="rewindButton" class="help-button" type="button" aria-label="Son hamleyi geri al">
+            ↺
+          </button>
+        </div>
       </header>
 
       <main class="app-body">
@@ -39,6 +47,7 @@
             <span class="player-name-wrap">
               <span id="player2Display" class="player-name">Oyuncu 2</span>
               <button id="player2Edit" class="player-edit" type="button" aria-label="Oyuncu 2 adını düzenle">✎</button>
+              <span id="player2Time" class="player-time">Sınırsız</span>
             </span>
             <span id="player2Score" class="player-score">0</span>
             <input id="player2Name" class="player-input is-hidden" type="text" value="Oyuncu 2" aria-label="Oyuncu 2 adı" />
@@ -49,6 +58,7 @@
             <span class="player-name-wrap">
               <span id="player1Display" class="player-name">Oyuncu 1</span>
               <button id="player1Edit" class="player-edit" type="button" aria-label="Oyuncu 1 adını düzenle">✎</button>
+              <span id="player1Time" class="player-time">Sınırsız</span>
             </span>
             <span id="player1Score" class="player-score">0</span>
             <input id="player1Name" class="player-input is-hidden" type="text" value="Oyuncu 1" aria-label="Oyuncu 1 adı" />
@@ -98,6 +108,22 @@
         </div>
         <p id="winMessage" class="win-message">Kazanan: Oyuncu 1</p>
         <button id="newRound" class="bottom-btn" type="button">Yeni Maç</button>
+      </div>
+    </div>
+
+    <div id="settingsModal" class="help-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
+      <div class="help-content">
+        <div class="help-header">
+          <h2 id="settingsTitle">Ayarlar</h2>
+          <button id="settingsClose" class="help-close" type="button" aria-label="Kapat">×</button>
+        </div>
+        <h3 class="help-subtitle">Süre</h3>
+        <div class="settings-options">
+          <button class="settings-option" data-time="unlimited">Sınırsız</button>
+          <button class="settings-option" data-time="60">1 dk</button>
+          <button class="settings-option" data-time="180">3 dk</button>
+          <button class="settings-option" data-time="300">5 dk</button>
+        </div>
       </div>
     </div>
 

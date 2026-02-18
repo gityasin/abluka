@@ -17,12 +17,18 @@ const statusMessage = document.getElementById("statusMessage");
 const helpButton = document.getElementById("helpButton");
 const helpModal = document.getElementById("helpModal");
 const helpClose = document.getElementById("helpClose");
+const settingsButton = document.getElementById("settingsButton");
+const settingsModal = document.getElementById("settingsModal");
+const settingsClose = document.getElementById("settingsClose");
+const settingsOptions = document.querySelectorAll(".settings-option");
 const player1Box = document.getElementById("player1Box");
 const player2Box = document.getElementById("player2Box");
 const player1Name = document.getElementById("player1Name");
 const player2Name = document.getElementById("player2Name");
 const player1Display = document.getElementById("player1Display");
 const player2Display = document.getElementById("player2Display");
+const player1Time = document.getElementById("player1Time");
+const player2Time = document.getElementById("player2Time");
 const player1Edit = document.getElementById("player1Edit");
 const player2Edit = document.getElementById("player2Edit");
 const player1Score = document.getElementById("player1Score");
@@ -38,6 +44,10 @@ let selectedCell = null;
 let gameOver = false;
 let phase = "move";
 let scores = { p1: 0, p2: 0 };
+let gameTimeLimit = "unlimited";
+let timeRemaining = { p1: null, p2: null };
+let timerIntervalId = null;
+let historyStack = [];
 let pawnPositions = {
   p1: { row: 6, col: 3 },
   p2: { row: 0, col: 3 }
@@ -47,6 +57,14 @@ const playerLabels = {
   p1: "Oyuncu 1",
   p2: "Oyuncu 2"
 };
+
+function getStoredName(player) {
+  try {
+    return localStorage.getItem(`abluka.playerName.${player}`);
+  } catch (error) {
+    return null;
+  }
+}
 
 function getPlayerName(player) {
   if (player === "p1") {
@@ -68,7 +86,7 @@ function getPlayerName(player) {
   return playerLabels[player];
 }
 
-function setPlayerName(player, name) {
+function setPlayerName(player, name, persist = true) {
   const safeName = name.trim() || playerLabels[player];
   if (player === "p1") {
     if (player1Display) {
@@ -84,6 +102,13 @@ function setPlayerName(player, name) {
     }
     if (player2Name) {
       player2Name.value = safeName;
+    }
+  }
+  if (persist) {
+    try {
+      localStorage.setItem(`abluka.playerName.${player}`, safeName);
+    } catch (error) {
+      // Ignore storage failures (private mode or disabled storage).
     }
   }
 }
@@ -151,7 +176,10 @@ function resetGame() {
   selectedCell = null;
   gameOver = false;
   phase = "move";
+  historyStack = [];
   updateStatus("Oyuncu taşını seç, sonra hareket et.");
+  applyTimeLimit();
+  saveHistory();
   renderBoard();
   startTurn();
 }
@@ -226,6 +254,142 @@ function updateScores() {
   }
 }
 
+function cloneBoardState(state) {
+  return state.map((row) => row.map((cell) => ({ type: cell.type })));
+}
+
+function saveHistory() {
+  historyStack.push({
+    boardState: cloneBoardState(boardState),
+    pawnPositions: {
+      p1: { ...pawnPositions.p1 },
+      p2: { ...pawnPositions.p2 }
+    },
+    currentPlayer,
+    phase,
+    selectedCell: selectedCell ? { ...selectedCell } : null,
+    gameOver,
+    scores: { ...scores },
+    timeRemaining: {
+      p1: timeRemaining.p1,
+      p2: timeRemaining.p2
+    },
+    statusMessage: statusMessage.textContent
+  });
+}
+
+function restoreHistory() {
+  if (historyStack.length < 2) {
+    return;
+  }
+  historyStack.pop();
+  const snapshot = historyStack[historyStack.length - 1];
+  stopTimerInterval();
+  boardState = cloneBoardState(snapshot.boardState);
+  pawnPositions = {
+    p1: { ...snapshot.pawnPositions.p1 },
+    p2: { ...snapshot.pawnPositions.p2 }
+  };
+  currentPlayer = snapshot.currentPlayer;
+  phase = snapshot.phase;
+  selectedCell = snapshot.selectedCell ? { ...snapshot.selectedCell } : null;
+  gameOver = snapshot.gameOver;
+  scores = { ...snapshot.scores };
+  timeRemaining = {
+    p1: snapshot.timeRemaining.p1,
+    p2: snapshot.timeRemaining.p2
+  };
+  closeWin();
+  updateScores();
+  updateTimeDisplays();
+  updateStatus(snapshot.statusMessage || "Oyuncu taşını seç, sonra hareket et.");
+  renderBoard();
+  if (!gameOver) {
+    startTimerInterval();
+  }
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function updateTimeDisplays() {
+  if (gameTimeLimit === "unlimited") {
+    if (player1Time) {
+      player1Time.textContent = "Sınırsız";
+    }
+    if (player2Time) {
+      player2Time.textContent = "Sınırsız";
+    }
+    return;
+  }
+
+  if (player1Time) {
+    player1Time.textContent = formatTime(timeRemaining.p1);
+  }
+  if (player2Time) {
+    player2Time.textContent = formatTime(timeRemaining.p2);
+  }
+}
+
+function stopTimerInterval() {
+  if (timerIntervalId) {
+    clearInterval(timerIntervalId);
+    timerIntervalId = null;
+  }
+}
+
+function handleTimeOut(player) {
+  if (gameOver) {
+    return;
+  }
+  gameOver = true;
+  const winnerKey = player === "p1" ? "p2" : "p1";
+  const winner = getPlayerName(winnerKey);
+  scores[winnerKey] += 1;
+  updateScores();
+  updateStatus(`Süre bitti. ${winner} kazandı.`);
+  showWin(winnerKey);
+  updateActivePlayer();
+  stopTimerInterval();
+}
+
+function startTimerInterval() {
+  stopTimerInterval();
+  if (gameTimeLimit === "unlimited") {
+    return;
+  }
+  timerIntervalId = setInterval(() => {
+    if (gameOver || gameTimeLimit === "unlimited") {
+      return;
+    }
+    if (timeRemaining[currentPlayer] <= 0) {
+      handleTimeOut(currentPlayer);
+      return;
+    }
+    timeRemaining[currentPlayer] = Math.max(0, timeRemaining[currentPlayer] - 1);
+    updateTimeDisplays();
+    if (timeRemaining[currentPlayer] === 0) {
+      handleTimeOut(currentPlayer);
+    }
+  }, 1000);
+}
+
+function applyTimeLimit() {
+  if (gameTimeLimit === "unlimited") {
+    timeRemaining = { p1: null, p2: null };
+    updateTimeDisplays();
+    stopTimerInterval();
+    return;
+  }
+  const limitSeconds = Number(gameTimeLimit);
+  timeRemaining = { p1: limitSeconds, p2: limitSeconds };
+  updateTimeDisplays();
+  startTimerInterval();
+}
+
 function showWin(winnerKey) {
   const winnerName = getPlayerName(winnerKey);
   if (winMessage) {
@@ -254,6 +418,7 @@ function startTurn() {
     updateScores();
     updateStatus(`${winner} abluka ile kazandı.`);
     showWin(winnerKey);
+    stopTimerInterval();
     return;
   }
   phase = "move";
@@ -272,6 +437,7 @@ function endTurnAfterBlock() {
     updateStatus(`${winner} abluka ile kazandı.`);
     showWin(winnerKey);
     updateActivePlayer();
+    stopTimerInterval();
     return;
   }
   phase = "move";
@@ -292,11 +458,13 @@ function handleCellClick(row, col) {
   if (phase === "move") {
     if (cell.type === currentPlayer) {
       if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+        saveHistory();
         selectedCell = null;
         updateStatus("Oyuncu taşını seç, sonra hareket et.");
         renderBoard();
         return;
       }
+      saveHistory();
       selectedCell = { row, col };
       updateStatus("Hedef kareyi seç.");
       renderBoard();
@@ -320,7 +488,7 @@ function handleCellClick(row, col) {
       updateStatus("Bu hamle yasal değil.");
       return;
     }
-
+    saveHistory();
     boardState[row][col] = { type: currentPlayer };
     boardState[selectedCell.row][selectedCell.col] = { type: "empty" };
     pawnPositions[currentPlayer] = { row, col };
@@ -335,6 +503,7 @@ function handleCellClick(row, col) {
     if (cell.type !== "empty") {
       return;
     }
+    saveHistory();
     boardState[row][col] = { type: "barrier" };
     endTurnAfterBlock();
     renderBoard();
@@ -356,6 +525,9 @@ function renderBoard() {
       cellButton.className = "cell";
       if ((row + col) % 2 === 1) {
         cellButton.classList.add("dark");
+      }
+      if (row === 3 && col === 3) {
+        cellButton.classList.add("center");
       }
       if (cell.type === "barrier") {
         cellButton.classList.add("barrier");
@@ -425,16 +597,10 @@ if (player2Name) {
   });
 }
 
-setPlayerName("p1", playerLabels.p1);
-setPlayerName("p2", playerLabels.p2);
-
-function closeHelp() {
-  if (!helpModal) {
-    return;
-  }
-  helpModal.classList.remove("is-open");
-  helpModal.setAttribute("aria-hidden", "true");
-}
+const storedP1Name = getStoredName("p1") || playerLabels.p1;
+const storedP2Name = getStoredName("p2") || playerLabels.p2;
+setPlayerName("p1", storedP1Name, false);
+setPlayerName("p2", storedP2Name, false);
 
 function openHelp() {
   if (!helpModal) {
@@ -444,12 +610,44 @@ function openHelp() {
   helpModal.setAttribute("aria-hidden", "false");
 }
 
+function closeHelp() {
+  if (!helpModal) {
+    return;
+  }
+  helpModal.classList.remove("is-open");
+  helpModal.setAttribute("aria-hidden", "true");
+}
+
+function openSettings() {
+  if (!settingsModal) {
+    return;
+  }
+  settingsModal.classList.add("is-open");
+  settingsModal.setAttribute("aria-hidden", "false");
+}
+
+function closeSettings() {
+  if (!settingsModal) {
+    return;
+  }
+  settingsModal.classList.remove("is-open");
+  settingsModal.setAttribute("aria-hidden", "true");
+}
+
 if (helpButton) {
   helpButton.addEventListener("click", openHelp);
 }
 
+if (settingsButton) {
+  settingsButton.addEventListener("click", openSettings);
+}
+
 if (helpClose) {
   helpClose.addEventListener("click", closeHelp);
+}
+
+if (settingsClose) {
+  settingsClose.addEventListener("click", closeSettings);
 }
 
 if (helpModal) {
@@ -459,6 +657,30 @@ if (helpModal) {
     }
   });
 }
+
+if (settingsModal) {
+  settingsModal.addEventListener("click", (event) => {
+    if (event.target === settingsModal) {
+      closeSettings();
+    }
+  });
+}
+
+if (rewindButton) {
+  rewindButton.addEventListener("click", restoreHistory);
+}
+
+settingsOptions.forEach((option) => {
+  if (option.dataset.time === gameTimeLimit) {
+    option.classList.add("active");
+  }
+  option.addEventListener("click", () => {
+    settingsOptions.forEach((opt) => opt.classList.remove("active"));
+    option.classList.add("active");
+    gameTimeLimit = option.dataset.time;
+    applyTimeLimit();
+  });
+});
 
 if (winClose) {
   winClose.addEventListener("click", closeWin);
@@ -483,6 +705,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeHelp();
     closeWin();
+    closeSettings();
   }
 });
 
