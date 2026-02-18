@@ -21,6 +21,7 @@ const settingsButton = document.getElementById("settingsButton");
 const settingsModal = document.getElementById("settingsModal");
 const settingsClose = document.getElementById("settingsClose");
 const settingsOptions = document.querySelectorAll(".settings-option");
+const rewindButton = document.getElementById("rewindButton");
 const player1Box = document.getElementById("player1Box");
 const player2Box = document.getElementById("player2Box");
 const player1Name = document.getElementById("player1Name");
@@ -37,6 +38,7 @@ const winModal = document.getElementById("winModal");
 const winClose = document.getElementById("winClose");
 const winMessage = document.getElementById("winMessage");
 const newRound = document.getElementById("newRound");
+const newGameButton = document.getElementById("newGameButton");
 
 let boardState = [];
 let currentPlayer = "p1";
@@ -177,7 +179,7 @@ function resetGame() {
   gameOver = false;
   phase = "move";
   historyStack = [];
-  updateStatus("Oyuncu taşını seç, sonra hareket et.");
+  updateStatus("Oyuncu taşını seç ve hareket et.");
   applyTimeLimit();
   saveHistory();
   renderBoard();
@@ -302,7 +304,7 @@ function restoreHistory() {
   closeWin();
   updateScores();
   updateTimeDisplays();
-  updateStatus(snapshot.statusMessage || "Oyuncu taşını seç, sonra hareket et.");
+  updateStatus(snapshot.statusMessage || "Oyuncu taşını seç ve hareket et.");
   renderBoard();
   if (!gameOver) {
     startTimerInterval();
@@ -423,28 +425,35 @@ function startTurn() {
   }
   phase = "move";
   selectedCell = null;
-  updateStatus("Oyuncu taşını seç, sonra hareket et.");
+  updateStatus("Oyuncu taşını seç ve hareket et.");
 }
 
 function endTurnAfterBlock() {
+  if (!playerHasMoves(currentPlayer)) {
+    endGame();
+    return;
+  }
   switchPlayer();
   if (!playerHasMoves(currentPlayer)) {
-    gameOver = true;
-    const winnerKey = currentPlayer === "p1" ? "p2" : "p1";
-    const winner = getPlayerName(winnerKey);
-    scores[winnerKey] += 1;
-    updateScores();
-    updateStatus(`${winner} abluka ile kazandı.`);
-    showWin(winnerKey);
-    updateActivePlayer();
-    stopTimerInterval();
+    endGame();
     return;
   }
   phase = "move";
   selectedCell = null;
-  updateStatus("Oyuncu taşını seç, sonra hareket et.");
+  updateStatus("Oyuncu taşını seç ve hareket et.");
 }
 
+function endGame() {
+  gameOver = true;
+  const winnerKey = currentPlayer === "p1" ? "p2" : "p1";
+  const winner = getPlayerName(winnerKey);
+  scores[winnerKey] += 1;
+  updateScores();
+  updateStatus(`${winner} abluka ile kazandı.`);
+  showWin(winnerKey);
+  updateActivePlayer();
+  stopTimerInterval();
+}
 function handleCellClick(row, col) {
   if (gameOver) {
     return;
@@ -460,7 +469,7 @@ function handleCellClick(row, col) {
       if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
         saveHistory();
         selectedCell = null;
-        updateStatus("Oyuncu taşını seç, sonra hareket et.");
+        updateStatus("Oyuncu taşını seç ve hareket et.");
         renderBoard();
         return;
       }
@@ -668,6 +677,13 @@ if (settingsModal) {
 
 if (rewindButton) {
   rewindButton.addEventListener("click", restoreHistory);
+}
+
+if (newGameButton) {
+  newGameButton.addEventListener("click", () => {
+    closeWin();
+    resetGame();
+  });
 }
 
 settingsOptions.forEach((option) => {
