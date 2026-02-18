@@ -1,0 +1,489 @@
+const BOARD_SIZE = 7;
+const DIRECTIONS = [
+  { row: -1, col: 0 },
+  { row: 1, col: 0 },
+  { row: 0, col: -1 },
+  { row: 0, col: 1 },
+  { row: -1, col: -1 },
+  { row: -1, col: 1 },
+  { row: 1, col: -1 },
+  { row: 1, col: 1 }
+];
+
+const boardElement = document.getElementById("board");
+const turnIndicator = document.getElementById("turnIndicator");
+const pieceCounts = document.getElementById("pieceCounts");
+const statusMessage = document.getElementById("statusMessage");
+const helpButton = document.getElementById("helpButton");
+const helpModal = document.getElementById("helpModal");
+const helpClose = document.getElementById("helpClose");
+const player1Box = document.getElementById("player1Box");
+const player2Box = document.getElementById("player2Box");
+const player1Name = document.getElementById("player1Name");
+const player2Name = document.getElementById("player2Name");
+const player1Display = document.getElementById("player1Display");
+const player2Display = document.getElementById("player2Display");
+const player1Edit = document.getElementById("player1Edit");
+const player2Edit = document.getElementById("player2Edit");
+const player1Score = document.getElementById("player1Score");
+const player2Score = document.getElementById("player2Score");
+const winModal = document.getElementById("winModal");
+const winClose = document.getElementById("winClose");
+const winMessage = document.getElementById("winMessage");
+const newRound = document.getElementById("newRound");
+
+let boardState = [];
+let currentPlayer = "p1";
+let selectedCell = null;
+let gameOver = false;
+let phase = "move";
+let scores = { p1: 0, p2: 0 };
+let pawnPositions = {
+  p1: { row: 6, col: 3 },
+  p2: { row: 0, col: 3 }
+};
+
+const playerLabels = {
+  p1: "Oyuncu 1",
+  p2: "Oyuncu 2"
+};
+
+function getPlayerName(player) {
+  if (player === "p1") {
+    if (player1Display) {
+      return player1Display.textContent.trim() || playerLabels.p1;
+    }
+    if (player1Name) {
+      return player1Name.value.trim() || playerLabels.p1;
+    }
+  }
+  if (player === "p2") {
+    if (player2Display) {
+      return player2Display.textContent.trim() || playerLabels.p2;
+    }
+    if (player2Name) {
+      return player2Name.value.trim() || playerLabels.p2;
+    }
+  }
+  return playerLabels[player];
+}
+
+function setPlayerName(player, name) {
+  const safeName = name.trim() || playerLabels[player];
+  if (player === "p1") {
+    if (player1Display) {
+      player1Display.textContent = safeName;
+    }
+    if (player1Name) {
+      player1Name.value = safeName;
+    }
+  }
+  if (player === "p2") {
+    if (player2Display) {
+      player2Display.textContent = safeName;
+    }
+    if (player2Name) {
+      player2Name.value = safeName;
+    }
+  }
+}
+
+function startEditing(player) {
+  const box = player === "p1" ? player1Box : player2Box;
+  const input = player === "p1" ? player1Name : player2Name;
+  const display = player === "p1" ? player1Display : player2Display;
+  if (!box || !input || !display) {
+    return;
+  }
+  box.classList.add("is-editing");
+  display.classList.add("is-hidden");
+  input.classList.remove("is-hidden");
+  input.focus();
+  input.select();
+}
+
+function stopEditing(player, commit) {
+  const box = player === "p1" ? player1Box : player2Box;
+  const input = player === "p1" ? player1Name : player2Name;
+  const display = player === "p1" ? player1Display : player2Display;
+  if (!box || !input || !display) {
+    return;
+  }
+  box.classList.remove("is-editing");
+  input.classList.add("is-hidden");
+  display.classList.remove("is-hidden");
+  if (commit) {
+    setPlayerName(player, input.value);
+  } else {
+    input.value = display.textContent;
+  }
+  updateStatus(statusMessage.textContent);
+}
+
+function updateActivePlayer() {
+  if (player1Box) {
+    player1Box.classList.toggle("is-active", currentPlayer === "p1");
+  }
+  if (player2Box) {
+    player2Box.classList.toggle("is-active", currentPlayer === "p2");
+  }
+}
+
+function createEmptyBoard() {
+  return Array.from({ length: BOARD_SIZE }, () =>
+    Array.from({ length: BOARD_SIZE }, () => ({ type: "empty" }))
+  );
+}
+
+function placePawns(board) {
+  pawnPositions = {
+    p1: { row: 6, col: 3 },
+    p2: { row: 0, col: 3 }
+  };
+  board[pawnPositions.p1.row][pawnPositions.p1.col] = { type: "p1" };
+  board[pawnPositions.p2.row][pawnPositions.p2.col] = { type: "p2" };
+}
+
+function resetGame() {
+  boardState = createEmptyBoard();
+  placePawns(boardState);
+  currentPlayer = "p1";
+  selectedCell = null;
+  gameOver = false;
+  phase = "move";
+  updateStatus("Oyuncu taşını seç, sonra hareket et.");
+  renderBoard();
+  startTurn();
+}
+
+function inBounds(row, col) {
+  return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+}
+
+function getCell(row, col) {
+  if (!inBounds(row, col)) {
+    return null;
+  }
+  return boardState[row][col];
+}
+
+function findLegalMoves(row, col, player) {
+  const moves = [];
+  const cell = getCell(row, col);
+  if (!cell || cell.type !== player) {
+    return moves;
+  }
+
+  DIRECTIONS.forEach((direction) => {
+    const targetRow = row + direction.row;
+    const targetCol = col + direction.col;
+    if (!inBounds(targetRow, targetCol)) {
+      return;
+    }
+    const targetCell = boardState[targetRow][targetCol];
+    if (targetCell.type === "barrier") {
+      return;
+    }
+    if (targetCell.type === player) {
+      return;
+    }
+    if (targetCell.type !== "empty") {
+      return;
+    }
+    moves.push({ row: targetRow, col: targetCol });
+  });
+
+  return moves;
+}
+
+function countBarriers() {
+  return boardState.flat().filter((cell) => cell.type === "barrier").length;
+}
+
+function playerHasMoves(player) {
+  const pawn = pawnPositions[player];
+  const moves = findLegalMoves(pawn.row, pawn.col, player);
+  return moves.length > 0;
+}
+
+function switchPlayer() {
+  currentPlayer = currentPlayer === "p1" ? "p2" : "p1";
+}
+
+function updateStatus(message) {
+  statusMessage.textContent = message;
+  turnIndicator.textContent = getPlayerName(currentPlayer);
+  pieceCounts.textContent = `${countBarriers()} yerleştirildi`;
+  updateActivePlayer();
+}
+
+function updateScores() {
+  if (player1Score) {
+    player1Score.textContent = scores.p1;
+  }
+  if (player2Score) {
+    player2Score.textContent = scores.p2;
+  }
+}
+
+function showWin(winnerKey) {
+  const winnerName = getPlayerName(winnerKey);
+  if (winMessage) {
+    winMessage.textContent = `Kazanan: ${winnerName}`;
+  }
+  if (winModal) {
+    winModal.classList.add("is-open");
+    winModal.setAttribute("aria-hidden", "false");
+  }
+}
+
+function closeWin() {
+  if (!winModal) {
+    return;
+  }
+  winModal.classList.remove("is-open");
+  winModal.setAttribute("aria-hidden", "true");
+}
+
+function startTurn() {
+  if (!playerHasMoves(currentPlayer)) {
+    gameOver = true;
+    const winnerKey = currentPlayer === "p1" ? "p2" : "p1";
+    const winner = getPlayerName(winnerKey);
+    scores[winnerKey] += 1;
+    updateScores();
+    updateStatus(`${winner} abluka ile kazandı.`);
+    showWin(winnerKey);
+    return;
+  }
+  phase = "move";
+  selectedCell = null;
+  updateStatus("Oyuncu taşını seç, sonra hareket et.");
+}
+
+function endTurnAfterBlock() {
+  switchPlayer();
+  if (!playerHasMoves(currentPlayer)) {
+    gameOver = true;
+    const winnerKey = currentPlayer === "p1" ? "p2" : "p1";
+    const winner = getPlayerName(winnerKey);
+    scores[winnerKey] += 1;
+    updateScores();
+    updateStatus(`${winner} abluka ile kazandı.`);
+    showWin(winnerKey);
+    updateActivePlayer();
+    return;
+  }
+  phase = "move";
+  selectedCell = null;
+  updateStatus("Oyuncu taşını seç, sonra hareket et.");
+}
+
+function handleCellClick(row, col) {
+  if (gameOver) {
+    return;
+  }
+
+  const cell = boardState[row][col];
+  if (cell.type === "barrier") {
+    return;
+  }
+
+  if (phase === "move") {
+    if (cell.type === currentPlayer) {
+      if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+        selectedCell = null;
+        updateStatus("Oyuncu taşını seç, sonra hareket et.");
+        renderBoard();
+        return;
+      }
+      selectedCell = { row, col };
+      updateStatus("Hedef kareyi seç.");
+      renderBoard();
+      return;
+    }
+
+    if (!selectedCell) {
+      return;
+    }
+
+    const legalMoves = findLegalMoves(
+      selectedCell.row,
+      selectedCell.col,
+      currentPlayer
+    );
+    const isLegal = legalMoves.some(
+      (move) => move.row === row && move.col === col
+    );
+
+    if (!isLegal) {
+      updateStatus("Bu hamle yasal değil.");
+      return;
+    }
+
+    boardState[row][col] = { type: currentPlayer };
+    boardState[selectedCell.row][selectedCell.col] = { type: "empty" };
+    pawnPositions[currentPlayer] = { row, col };
+    selectedCell = null;
+    phase = "block";
+    updateStatus("Boş bir kareye engel taşı koy.");
+    renderBoard();
+    return;
+  }
+
+  if (phase === "block") {
+    if (cell.type !== "empty") {
+      return;
+    }
+    boardState[row][col] = { type: "barrier" };
+    endTurnAfterBlock();
+    renderBoard();
+  }
+}
+
+function renderBoard() {
+  boardElement.innerHTML = "";
+  const legalMoves =
+    selectedCell && phase === "move"
+      ? findLegalMoves(selectedCell.row, selectedCell.col, currentPlayer)
+      : [];
+
+  for (let row = 0; row < BOARD_SIZE; row += 1) {
+    for (let col = 0; col < BOARD_SIZE; col += 1) {
+      const cell = boardState[row][col];
+      const cellButton = document.createElement("button");
+      cellButton.type = "button";
+      cellButton.className = "cell";
+      if ((row + col) % 2 === 1) {
+        cellButton.classList.add("dark");
+      }
+      if (cell.type === "barrier") {
+        cellButton.classList.add("barrier");
+      }
+
+      if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+        cellButton.classList.add("selected");
+      }
+
+      if (phase === "move") {
+        if (legalMoves.some((move) => move.row === row && move.col === col)) {
+          cellButton.classList.add("highlight");
+        }
+      }
+
+      if (phase === "block" && cell.type === "empty") {
+        cellButton.classList.add("blockable");
+      }
+
+      cellButton.dataset.row = row;
+      cellButton.dataset.col = col;
+      cellButton.setAttribute("role", "gridcell");
+      cellButton.addEventListener("click", () => handleCellClick(row, col));
+
+      if (cell.type === "p1" || cell.type === "p2") {
+        const pawn = document.createElement("span");
+        pawn.className = `pawn ${cell.type}`;
+        cellButton.appendChild(pawn);
+      }
+
+      boardElement.appendChild(cellButton);
+    }
+  }
+}
+
+updateScores();
+
+if (player1Edit) {
+  player1Edit.addEventListener("click", () => startEditing("p1"));
+}
+
+if (player2Edit) {
+  player2Edit.addEventListener("click", () => startEditing("p2"));
+}
+
+if (player1Name) {
+  player1Name.addEventListener("blur", () => stopEditing("p1", true));
+  player1Name.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      stopEditing("p1", true);
+    }
+    if (event.key === "Escape") {
+      stopEditing("p1", false);
+    }
+  });
+}
+
+if (player2Name) {
+  player2Name.addEventListener("blur", () => stopEditing("p2", true));
+  player2Name.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      stopEditing("p2", true);
+    }
+    if (event.key === "Escape") {
+      stopEditing("p2", false);
+    }
+  });
+}
+
+setPlayerName("p1", playerLabels.p1);
+setPlayerName("p2", playerLabels.p2);
+
+function closeHelp() {
+  if (!helpModal) {
+    return;
+  }
+  helpModal.classList.remove("is-open");
+  helpModal.setAttribute("aria-hidden", "true");
+}
+
+function openHelp() {
+  if (!helpModal) {
+    return;
+  }
+  helpModal.classList.add("is-open");
+  helpModal.setAttribute("aria-hidden", "false");
+}
+
+if (helpButton) {
+  helpButton.addEventListener("click", openHelp);
+}
+
+if (helpClose) {
+  helpClose.addEventListener("click", closeHelp);
+}
+
+if (helpModal) {
+  helpModal.addEventListener("click", (event) => {
+    if (event.target === helpModal) {
+      closeHelp();
+    }
+  });
+}
+
+if (winClose) {
+  winClose.addEventListener("click", closeWin);
+}
+
+if (newRound) {
+  newRound.addEventListener("click", () => {
+    closeWin();
+    resetGame();
+  });
+}
+
+if (winModal) {
+  winModal.addEventListener("click", (event) => {
+    if (event.target === winModal) {
+      closeWin();
+    }
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeHelp();
+    closeWin();
+  }
+});
+
+resetGame();

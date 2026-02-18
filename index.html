@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ABLUKA</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="top-bar">
+        <div class="brand">
+          <p class="eyebrow">ABLUKA</p>
+          <h1>ABLUKA</h1>
+        </div>
+        <div class="status-panel" aria-live="polite">
+          <div class="status-row">
+            <span class="label">Sıra</span>
+            <span id="turnIndicator" class="value">Oyuncu 1</span>
+          </div>
+          <div class="status-row">
+            <span class="label">Engel taşı</span>
+            <span id="pieceCounts" class="value">0 yerleştirildi</span>
+          </div>
+          <div class="status-row">
+            <span class="label">Durum</span>
+            <span id="statusMessage" class="value">Oyuncu taşını seç, sonra hareket et.</span>
+          </div>
+        </div>
+        <button id="helpButton" class="help-button" type="button" aria-label="Nasıl oynanır">
+          ?
+        </button>
+      </header>
+
+      <main class="app-body">
+        <section class="board-wrap">
+          <div class="player-box player-box--top" id="player2Box" data-player="p2">
+            <span class="player-label">Oyuncu 2</span>
+            <span class="player-name-wrap">
+              <span id="player2Display" class="player-name">Oyuncu 2</span>
+              <button id="player2Edit" class="player-edit" type="button" aria-label="Oyuncu 2 adını düzenle">✎</button>
+            </span>
+            <span id="player2Score" class="player-score">0</span>
+            <input id="player2Name" class="player-input is-hidden" type="text" value="Oyuncu 2" aria-label="Oyuncu 2 adı" />
+          </div>
+          <div id="board" class="board" role="grid" aria-label="Abluka board"></div>
+          <div class="player-box player-box--bottom" id="player1Box" data-player="p1">
+            <span class="player-label">Oyuncu 1</span>
+            <span class="player-name-wrap">
+              <span id="player1Display" class="player-name">Oyuncu 1</span>
+              <button id="player1Edit" class="player-edit" type="button" aria-label="Oyuncu 1 adını düzenle">✎</button>
+            </span>
+            <span id="player1Score" class="player-score">0</span>
+            <input id="player1Name" class="player-input is-hidden" type="text" value="Oyuncu 1" aria-label="Oyuncu 1 adı" />
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+
+    <div id="helpModal" class="help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle" aria-hidden="true">
+      <div class="help-content">
+        <div class="help-header">
+          <h2 id="helpTitle">Nasıl Oynanır</h2>
+          <button id="helpClose" class="help-close" type="button" aria-label="Kapat">×</button>
+        </div>
+        <ol class="help-list">
+          <li>Oyuncu 1 başlar.</li>
+          <li>Oyuncu taşını seç.</li>
+          <li>Her yöne 1 kare hareket et.</li>
+          <li>Herhangi bir boş kareye engel taşı koy.</li>
+          <li>Oyuncu taşları aynı karede olamaz.</li>
+        </ol>
+        <h3 class="help-subtitle">Kazanma Şartı</h3>
+        <p>Rakibi hiç yasal hamle kalmayacak şekilde kilitle.</p>
+        <h3 class="help-subtitle">Açıklama</h3>
+        <div class="legend-row">
+          <span class="pawn p1"></span>
+          <span>Oyuncu 1 oyuncu taşı (siyah)</span>
+        </div>
+        <div class="legend-row">
+          <span class="pawn p2"></span>
+          <span>Oyuncu 2 oyuncu taşı (beyaz)</span>
+        </div>
+        <div class="legend-row">
+          <span class="barrier-swatch"></span>
+          <span>Engel taşı</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="winModal" class="help-modal" role="dialog" aria-modal="true" aria-labelledby="winTitle" aria-hidden="true">
+      <div class="help-content">
+        <div class="help-header">
+          <h2 id="winTitle">Oyun Bitti</h2>
+          <button id="winClose" class="help-close" type="button" aria-label="Kapat">×</button>
+        </div>
+        <p id="winMessage" class="win-message">Kazanan: Oyuncu 1</p>
+        <button id="newRound" class="bottom-btn" type="button">Yeni Maç</button>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
