@@ -29,6 +29,188 @@ body {
   background: radial-gradient(circle at top, #f9f7f3, #e5e2dc 55%, #bcb7b0 100%);
   color: var(--ink);
   min-height: 100vh;
+  transition: background 0.3s ease;
+}
+
+body.dark-mode {
+  background: radial-gradient(circle at top, #0a0b0d, #12141a 55%, #1a1d24 100%);
+  color: #f3f4f6;
+}
+
+body:not(.dark-mode) .player-box {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .player-box.is-active {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 20px rgba(214, 58, 53, 0.4), inset 0 0 0 1px rgba(214, 58, 53, 0.3);
+  border-color: rgba(214, 58, 53, 0.5);
+}
+
+body:not(.dark-mode) .player-label {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+body:not(.dark-mode) .player-name {
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .board-wrap {
+  background: linear-gradient(135deg, #e8e6e2, #d8d4cf);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+body:not(.dark-mode) .board-wrap::after {
+  background: none;
+}
+
+body:not(.dark-mode) .board-wrap::before {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+body:not(.dark-mode) .status-panel {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body:not(.dark-mode) .status-row .label {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+body:not(.dark-mode) .status-row .value {
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .player-time {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .player-score {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .player-edit {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .player-edit:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+body:not(.dark-mode) .player-input {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .player-input:focus {
+  border-color: rgba(214, 58, 53, 0.6);
+  background: rgba(255, 255, 255, 1);
+}
+
+body:not(.dark-mode) .help-button {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .help-button:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+body:not(.dark-mode) .top-bar {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+body:not(.dark-mode) h1 {
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .help-modal {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+body:not(.dark-mode) .help-content {
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+body:not(.dark-mode) .help-close {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .help-close:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+body:not(.dark-mode) .help-subtitle {
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .settings-option {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .settings-option:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(214, 58, 53, 0.4);
+}
+
+body:not(.dark-mode) .settings-option.active {
+  background: #d63a35;
+  border-color: #d63a35;
+  color: #ffffff;
+}
+
+body:not(.dark-mode) .settings-audio-label {
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .settings-audio-button {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
+body:not(.dark-mode) .settings-audio-button:hover {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(214, 58, 53, 0.4);
+}
+
+body:not(.dark-mode) .help-footer {
+  border-top-color: rgba(0, 0, 0, 0.15);
+}
+
+body:not(.dark-mode) .cell:not(.barrier) {
+  background: #c9c5c0;
+}
+
+body:not(.dark-mode) .cell.dark:not(.barrier) {
+  background: #c9c5c0;
+}
+
+body:not(.dark-mode) .cell.center::after {
+  background: rgba(80, 75, 70, 0.85);
+  box-shadow: 0 0 0 2px rgba(60, 55, 50, 0.4);
+}
+
+body:not(.dark-mode) .board {
+  background: #a8a49f;
 }
 
 .page {
@@ -555,6 +737,21 @@ h1 {
   border-radius: 2px;
 }
 
+.dark-mode-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  position: relative;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.settings-audio-button.is-dark .dark-mode-icon {
+  filter: brightness(1.2);
+}
+
 .legend-row {
   display: flex;
   align-items: center;
@@ -565,6 +762,23 @@ h1 {
 
 .legend-row:last-child {
   margin-bottom: 0;
+}
+
+.legend-row .pawn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  transform: translateY(0);
+}
+
+.help-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8rem;
+  opacity: 0.6;
 }
 
 .barrier-swatch {
@@ -592,6 +806,14 @@ h1 {
 @media (min-width: 1000px) {
   .page {
     max-width: 1600px;
+  }
+
+  .eyebrow {
+    display: none;
+  }
+
+  h1 {
+    margin-bottom: 0;
   }
 
   .top-bar {

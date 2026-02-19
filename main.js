@@ -23,6 +23,7 @@ const settingsClose = document.getElementById("settingsClose");
 const settingsOptions = document.querySelectorAll(".settings-option");
 const volumeSlider = document.getElementById("volumeSlider");
 const muteButton = document.getElementById("muteButton");
+const darkModeToggle = document.getElementById("darkModeToggle");
 const rewindButton = document.getElementById("rewindButton");
 const player1Box = document.getElementById("player1Box");
 const player2Box = document.getElementById("player2Box");
@@ -56,6 +57,7 @@ let audioContext = null;
 let masterGain = null;
 let volumeLevel = 0.6;
 let isMuted = false;
+let isDarkMode = true;
 let pawnPositions = {
   p1: { row: 6, col: 3 },
   p2: { row: 0, col: 3 }
@@ -94,6 +96,18 @@ function updateMuteButton() {
   const icon = muteButton.querySelector(".mute-icon");
   if (icon) {
     icon.textContent = isMuted ? "🔇" : "🔊";
+  }
+}
+
+function updateDarkMode() {
+  if (!darkModeToggle) {
+    return;
+  }
+  document.body.classList.toggle("dark-mode", isDarkMode);
+  darkModeToggle.classList.toggle("is-dark", isDarkMode);
+  const icon = darkModeToggle.querySelector(".dark-mode-icon");
+  if (icon) {
+    icon.textContent = isDarkMode ? "☀️" : "🌙";
   }
 }
 
@@ -823,6 +837,11 @@ if (volumeSlider) {
     isMuted = storedMutedRaw === "true";
   }
   updateMuteButton();
+  const storedDarkModeRaw = localStorage.getItem("abluka.darkMode");
+  if (storedDarkModeRaw !== null) {
+    isDarkMode = storedDarkModeRaw === "true";
+  }
+  updateDarkMode();
   volumeSlider.addEventListener("input", () => {
     volumeLevel = Number(volumeSlider.value) / 100;
     initAudio();
@@ -847,6 +866,18 @@ if (muteButton) {
     updateMuteButton();
     try {
       localStorage.setItem("abluka.muted", String(isMuted));
+    } catch (error) {
+      // Ignore storage failures.
+    }
+  });
+}
+
+if (darkModeToggle) {
+  darkModeToggle.addEventListener("click", () => {
+    isDarkMode = !isDarkMode;
+    updateDarkMode();
+    try {
+      localStorage.setItem("abluka.darkMode", String(isDarkMode));
     } catch (error) {
       // Ignore storage failures.
     }
