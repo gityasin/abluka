@@ -21,6 +21,8 @@ const settingsButton = document.getElementById("settingsButton");
 const settingsModal = document.getElementById("settingsModal");
 const settingsClose = document.getElementById("settingsClose");
 const settingsOptions = document.querySelectorAll(".settings-option");
+const volumeSlider = document.getElementById("volumeSlider");
+const muteButton = document.getElementById("muteButton");
 const rewindButton = document.getElementById("rewindButton");
 const player1Box = document.getElementById("player1Box");
 const player2Box = document.getElementById("player2Box");
@@ -50,6 +52,10 @@ let gameTimeLimit = "unlimited";
 let timeRemaining = { p1: null, p2: null };
 let timerIntervalId = null;
 let historyStack = [];
+let audioContext = null;
+let masterGain = null;
+let volumeLevel = 0.6;
+let isMuted = false;
 let pawnPositions = {
   p1: { row: 6, col: 3 },
   p2: { row: 0, col: 3 }
@@ -59,6 +65,106 @@ const playerLabels = {
   p1: "Oyuncu 1",
   p2: "Oyuncu 2"
 };
+
+function initAudio() {
+  if (audioContext) {
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+    return;
+  }
+  const AudioContextRef = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextRef) {
+    return;
+  }
+  audioContext = new AudioContextRef();
+  masterGain = audioContext.createGain();
+  masterGain.gain.value = isMuted ? 0 : volumeLevel;
+  masterGain.connect(audioContext.destination);
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+}
+
+function updateMuteButton() {
+  if (!muteButton) {
+    return;
+  }
+  muteButton.classList.toggle("is-muted", isMuted);
+  const icon = muteButton.querySelector(".mute-icon");
+  if (icon) {
+    icon.textContent = isMuted ? "🔇" : "🔊";
+  }
+}
+
+function playTone({ frequency, duration, type = "sine" }) {
+  initAudio();
+  if (!audioContext || !masterGain) {
+    return;
+  }
+  const startTone = () => {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.value = 0.001;
+    osc.connect(gain);
+    gain.connect(masterGain);
+    const now = audioContext.currentTime + 0.02;
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.start(now);
+    osc.stop(now + duration + 0.03);
+  };
+  if (audioContext.state === "suspended") {
+    audioContext.resume().then(startTone).catch(() => {});
+    return;
+  }
+  startTone();
+}
+
+function playThock({ filterFreq, duration, gainPeak }) {
+  initAudio();
+  if (!audioContext || !masterGain) {
+    return;
+  }
+
+  const bufferSize = Math.floor(audioContext.sampleRate * duration);
+  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i += 1) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+  }
+
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+
+  const filter = audioContext.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = filterFreq;
+  filter.Q.value = 0.7;
+
+  const gain = audioContext.createGain();
+  gain.gain.value = 0.001;
+
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+
+  const now = audioContext.currentTime + 0.01;
+  gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  source.start(now);
+  source.stop(now + duration + 0.02);
+}
+
+function playMoveSound() {
+  playThock({ filterFreq: 1100, duration: 0.12, gainPeak: 0.22 });
+}
+
+function playBlockSound() {
+  playThock({ filterFreq: 800, duration: 0.14, gainPeak: 0.26 });
+}
 
 function getStoredName(player) {
   try {
@@ -504,6 +610,7 @@ function handleCellClick(row, col) {
     selectedCell = null;
     phase = "block";
     updateStatus("Boş bir kareye engel taşı koy.");
+      playMoveSound();
     renderBoard();
     return;
   }
@@ -514,6 +621,7 @@ function handleCellClick(row, col) {
     }
     saveHistory();
     boardState[row][col] = { type: "barrier" };
+      playBlockSound();
     endTurnAfterBlock();
     renderBoard();
   }
@@ -537,6 +645,9 @@ function renderBoard() {
       }
       if (row === 3 && col === 3) {
         cellButton.classList.add("center");
+        if (cell.type !== "empty") {
+          cellButton.classList.add("center-occupied");
+        }
       }
       if (cell.type === "barrier") {
         cellButton.classList.add("barrier");
@@ -697,6 +808,50 @@ settingsOptions.forEach((option) => {
     applyTimeLimit();
   });
 });
+
+if (volumeSlider) {
+  const storedVolumeRaw = localStorage.getItem("abluka.volume");
+  if (storedVolumeRaw !== null) {
+    const storedVolume = Number(storedVolumeRaw);
+    if (!Number.isNaN(storedVolume)) {
+      volumeLevel = Math.min(1, Math.max(0, storedVolume));
+      volumeSlider.value = Math.round(volumeLevel * 100);
+    }
+  }
+  const storedMutedRaw = localStorage.getItem("abluka.muted");
+  if (storedMutedRaw !== null) {
+    isMuted = storedMutedRaw === "true";
+  }
+  updateMuteButton();
+  volumeSlider.addEventListener("input", () => {
+    volumeLevel = Number(volumeSlider.value) / 100;
+    initAudio();
+    if (masterGain && !isMuted) {
+      masterGain.gain.value = volumeLevel;
+    }
+    try {
+      localStorage.setItem("abluka.volume", String(volumeLevel));
+    } catch (error) {
+      // Ignore storage failures.
+    }
+  });
+}
+
+if (muteButton) {
+  muteButton.addEventListener("click", () => {
+    isMuted = !isMuted;
+    initAudio();
+    if (masterGain) {
+      masterGain.gain.value = isMuted ? 0 : volumeLevel;
+    }
+    updateMuteButton();
+    try {
+      localStorage.setItem("abluka.muted", String(isMuted));
+    } catch (error) {
+      // Ignore storage failures.
+    }
+  });
+}
 
 if (winClose) {
   winClose.addEventListener("click", closeWin);
