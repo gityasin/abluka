@@ -7,6 +7,93 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="lobby-screen">
+      <div class="lobby-content">
+        <h1 class="lobby-title">ABLUKA</h1>
+        <p class="lobby-subtitle">Online Multiplayer</p>
+        
+        <div class="lobby-mode-selector">
+          <button id="localPlayButton" class="lobby-button lobby-button--primary">
+            Yerel Oyun
+          </button>
+          <button id="onlinePlayButton" class="lobby-button lobby-button--secondary">
+            ÇEVRİMİÇİ OYUN
+          </button>
+        </div>
+        
+        <div id="onlineOptions" class="online-options is-hidden">
+          <div class="online-option">
+            <button id="createGameButton" class="lobby-button lobby-button--primary">
+              Oyun Oluştur
+            </button>
+            <p class="online-help">Kodu arkadaşınızla paylaşın</p>
+          </div>
+          
+          <div class="online-option">
+            <input id="gameCodeInput" class="game-code-input" type="text" placeholder="Oyun kodunu girin" maxlength="6" />
+            <button id="joinGameButton" class="lobby-button lobby-button--secondary">
+              Oyuna Katıl
+            </button>
+          </div>
+          
+          <button id="backToModeButton" class="lobby-button lobby-button--tertiary">
+            Geri
+          </button>
+        </div>
+        
+        <div id="playerNameScreen" class="player-name-screen is-hidden">
+          <h2 class="name-screen-title">Adınız</h2>
+          <input id="playerNameInput" class="player-name-screen-input" type="text" placeholder="Adınızı girin" maxlength="20" />
+          <button id="continueNameButton" class="lobby-button lobby-button--primary">
+            Devam Et
+          </button>
+        </div>
+        
+        <div id="player1WaitingScreen" class="player-waiting-screen is-hidden">
+          <h2 class="name-screen-title">Rakibin Katılmasını Bekle</h2>
+          <p id="player1DisplayName" class="waiting-name">Adınız: </p>
+          <p class="waiting-message">Rakibin oyuna katılması ve ad girmesi bekleniyor...</p>
+          <button id="cancelWaitButton" class="lobby-button lobby-button--tertiary">
+            İptal Et
+          </button>
+        </div>
+        
+        <div id="player2ReadyScreen" class="player-ready-screen is-hidden">
+          <h2 class="name-screen-title">Hazırsın!</h2>
+          <p id="player1HostName" class="waiting-name">Ev Sahibi: </p>
+          <p id="player2DisplayName" class="waiting-name">Adınız: </p>
+          <p class="waiting-message">Oyunu başlatmak için rakibin "Başlat" butonuna basmasını bekle</p>
+          <button id="readyButton" class="lobby-button lobby-button--primary">
+            Hazırım
+          </button>
+          <button id="cancelReadyButton" class="lobby-button lobby-button--tertiary">
+            İptal Et
+          </button>
+        </div>
+        
+        <div id="player1StartScreen" class="player-start-screen is-hidden">
+          <h2 class="name-screen-title">İlk Oyuncu</h2>
+          <p id="opponentReadyMessage" class="waiting-message">Rakibin hazır oldu!</p>
+          <button id="startGameButtonP1" class="lobby-button lobby-button--primary">
+            Oyunu Başlat
+          </button>
+        </div>
+        
+        <div id="loadingScreen" class="loading-screen is-hidden">
+          <p id="loadingMessage" class="loading-message">Bağlanıyor...</p>
+          <div class="spinner"></div>
+        </div>
+        
+        <div id="gameCodeDisplay" class="game-code-display is-hidden">
+          <p class="code-label">Oyun Kodu:</p>
+          <p id="displayedGameCode" class="displayed-code"></p>
+          <p class="code-help">Bu kodu rakibinizle paylaşın</p>
+          <p id="waitingForPlayer" class="waiting-message">Rakinin katılmasını bekleniyor...</p>
+        </div>
+      </div>
+    </div>
+
     <div class="page">
       <header class="top-bar">
         <div class="brand">
@@ -154,6 +241,21 @@
       </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="config.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+      import { getDatabase, ref, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
+      
+      window.firebaseApp = initializeApp(firebaseConfig);
+      window.firebaseDB = getDatabase(window.firebaseApp);
+      window.firebaseRef = ref;
+      window.firebaseSet = set;
+      window.firebaseUpdate = update;
+      window.firebaseOnValue = onValue;
+      window.firebaseRemove = remove;
+    </script>
+    <script src="firebase-game.js"></script>
     <script src="main.js"></script>
   </body>
 </html>

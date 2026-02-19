@@ -62,6 +62,16 @@ let pawnPositions = {
   p1: { row: 6, col: 3 },
   p2: { row: 0, col: 3 }
 };
+let isOnlineMode = false;
+let localPlayerRole = null; // "player1" (p1) or "player2" (p2)
+let remoteGameState = null;
+
+// Function to initialize online game mode (called by firebase-game.js)
+function initializeOnlineGame(playerRole) {
+  isOnlineMode = true;
+  localPlayerRole = playerRole;
+  console.log("Online mode initialized:", { isOnlineMode, localPlayerRole });
+}
 
 const playerLabels = {
   p1: "Oyuncu 1",
@@ -291,7 +301,8 @@ function placePawns(board) {
   board[pawnPositions.p2.row][pawnPositions.p2.col] = { type: "p2" };
 }
 
-function resetGame() {
+function initializeGameBoard() {
+  // Initialize board without syncing (for Player 2 joining)
   boardState = createEmptyBoard();
   placePawns(boardState);
   currentPlayer = "p1";
@@ -303,7 +314,78 @@ function resetGame() {
   applyTimeLimit();
   saveHistory();
   renderBoard();
+  updateBoardPerspective();
+  
+  // Sync names from remote game state if available
+  if (remoteGameState) {
+    if (remoteGameState.player1 && remoteGameState.player1.name) {
+      setPlayerName("p1", remoteGameState.player1.name, false);
+    }
+    if (remoteGameState.player2 && remoteGameState.player2.name) {
+      setPlayerName("p2", remoteGameState.player2.name, false);
+    }
+  }
+}
+
+function updateBoardPerspective() {
+  // Flip board if this player is Player 2
+  const boardWrap = document.querySelector(".board-wrap");
+  if (isOnlineMode && localPlayerRole === "player2") {
+    boardElement.classList.add("flipped");
+    if (boardWrap) boardWrap.classList.add("board-reversed");
+  } else {
+    boardElement.classList.remove("flipped");
+    if (boardWrap) boardWrap.classList.remove("board-reversed");
+  }
+}
+
+function resetGame() {
+  // Load stored player names for local games only
+  if (!isOnlineMode) {
+    const storedP1Name = getStoredName("p1") || playerLabels.p1;
+    const storedP2Name = getStoredName("p2") || playerLabels.p2;
+    setPlayerName("p1", storedP1Name, false);
+    setPlayerName("p2", storedP2Name, false);
+  }
+  
+  boardState = createEmptyBoard();
+  placePawns(boardState);
+  currentPlayer = "p1";
+  selectedCell = null;
+  gameOver = false;
+  phase = "move";
+  historyStack = [];
+  updateStatus("Oyuncu taşını seç ve hareket et.");
+  applyTimeLimit();
+  saveHistory();
+  renderBoard();
+  updateBoardPerspective();
   startTurn();
+  
+  // Sync to Firebase if online
+  if (isOnlineMode && window.gameRoom && window.gameRoom.gameCode) {
+    console.log("Syncing initial game state to Firebase:", {
+      code: window.gameRoom.gameCode,
+      playerRole: localPlayerRole
+    });
+    window.gameRoom.startGame(boardState);
+  }
+}
+
+function syncGameState() {
+  if (!isOnlineMode || !window.gameRoom || !window.gameRoom.gameCode) return;
+  
+  console.log("Syncing game state:", { phase, currentPlayer, gameCode: window.gameRoom.gameCode });
+  
+  // Only sync game-critical data, not UI state like selectedCell
+  window.gameRoom.syncBoardState(
+    boardState,
+    phase,
+    currentPlayer,
+    pawnPositions,
+    scores,
+    gameOver
+  ).catch(err => console.error("Sync failed:", err));
 }
 
 function inBounds(row, col) {
@@ -551,16 +633,19 @@ function startTurn() {
 function endTurnAfterBlock() {
   if (!playerHasMoves(currentPlayer)) {
     endGame();
+    syncGameState();
     return;
   }
   switchPlayer();
   if (!playerHasMoves(currentPlayer)) {
     endGame();
+    syncGameState();
     return;
   }
   phase = "move";
   selectedCell = null;
   updateStatus("Oyuncu taşını seç ve hareket et.");
+  syncGameState();
 }
 
 function endGame() {
@@ -573,9 +658,16 @@ function endGame() {
   showWin(winnerKey);
   updateActivePlayer();
   stopTimerInterval();
+  syncGameState();
 }
 function handleCellClick(row, col) {
   if (gameOver) {
+    return;
+  }
+
+  // In online mode, only allow current player to move
+  if (isOnlineMode && !window.gameRoom.isCurrentPlayerLocal(currentPlayer)) {
+    updateStatus("Rakibinizin sırası bekleniyor.");
     return;
   }
 
@@ -626,6 +718,7 @@ function handleCellClick(row, col) {
     updateStatus("Boş bir kareye engel taşı koy.");
       playMoveSound();
     renderBoard();
+    syncGameState();
     return;
   }
 
@@ -636,6 +729,7 @@ function handleCellClick(row, col) {
     saveHistory();
     boardState[row][col] = { type: "barrier" };
       playBlockSound();
+    syncGameState();
     endTurnAfterBlock();
     renderBoard();
   }
@@ -695,6 +789,9 @@ function renderBoard() {
       boardElement.appendChild(cellButton);
     }
   }
+  
+  // Update board flip based on player perspective (Player 2 sees from bottom)
+  updateBoardPerspective();
 }
 
 updateScores();
@@ -731,10 +828,9 @@ if (player2Name) {
   });
 }
 
-const storedP1Name = getStoredName("p1") || playerLabels.p1;
-const storedP2Name = getStoredName("p2") || playerLabels.p2;
-setPlayerName("p1", storedP1Name, false);
-setPlayerName("p2", storedP2Name, false);
+// Initialize default player names
+setPlayerName("p1", playerLabels.p1, false);
+setPlayerName("p2", playerLabels.p2, false);
 
 function openHelp() {
   if (!helpModal) {
@@ -801,14 +897,32 @@ if (settingsModal) {
 }
 
 if (rewindButton) {
-  rewindButton.addEventListener("click", restoreHistory);
+  rewindButton.addEventListener("click", () => {
+    if (!isOnlineMode) {
+      restoreHistory();
+    }
+  });
+  // Disable rewind in online mode
+  if (isOnlineMode) {
+    rewindButton.disabled = true;
+    rewindButton.style.opacity = "0.5";
+    rewindButton.style.cursor = "not-allowed";
+  }
 }
 
 if (newGameButton) {
   newGameButton.addEventListener("click", () => {
-    closeWin();
-    resetGame();
+    if (!isOnlineMode) {
+      closeWin();
+      resetGame();
+    }
   });
+  // Disable new game in online mode
+  if (isOnlineMode) {
+    newGameButton.disabled = true;
+    newGameButton.style.opacity = "0.5";
+    newGameButton.style.cursor = "not-allowed";
+  }
 }
 
 settingsOptions.forEach((option) => {
@@ -816,11 +930,19 @@ settingsOptions.forEach((option) => {
     option.classList.add("active");
   }
   option.addEventListener("click", () => {
-    settingsOptions.forEach((opt) => opt.classList.remove("active"));
-    option.classList.add("active");
-    gameTimeLimit = option.dataset.time;
-    applyTimeLimit();
+    if (!isOnlineMode) {
+      settingsOptions.forEach((opt) => opt.classList.remove("active"));
+      option.classList.add("active");
+      gameTimeLimit = option.dataset.time;
+      applyTimeLimit();
+    }
   });
+  // Disable time options in online mode
+  if (isOnlineMode) {
+    option.disabled = true;
+    option.style.opacity = "0.5";
+    option.style.cursor = "not-allowed";
+  }
 });
 
 if (volumeSlider) {
@@ -842,6 +964,10 @@ if (volumeSlider) {
     isDarkMode = storedDarkModeRaw === "true";
   }
   updateDarkMode();
+  
+  // Initialize audio context on page load
+  initAudio();
+  
   volumeSlider.addEventListener("input", () => {
     volumeLevel = Number(volumeSlider.value) / 100;
     initAudio();
@@ -995,4 +1121,92 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-resetGame();
+// Firebase Game Update Listener
+window.addEventListener("gameUpdate", (event) => {
+  if (!isOnlineMode) return;
+  
+  const gameData = event.detail;
+  remoteGameState = gameData;
+  
+  // Sync opponent's name if available
+  if (gameData.player1 && gameData.player1.name) {
+    setPlayerName("p1", gameData.player1.name, false);
+  }
+  if (gameData.player2 && gameData.player2.name) {
+    setPlayerName("p2", gameData.player2.name, false);
+  }
+  
+  // Check if game has started (boardState exists) - transition P2 to game board
+  if (gameData.boardState && document.getElementById("player2ReadyScreen") && 
+      !document.getElementById("player2ReadyScreen").classList.contains("is-hidden")) {
+    console.log("Game started, transitioning Player 2 to game board");
+    
+    // Sync names before transitioning
+    if (gameData.player1 && gameData.player1.name) {
+      setPlayerName("p1", gameData.player1.name, false);
+    }
+    if (gameData.player2 && gameData.player2.name) {
+      setPlayerName("p2", gameData.player2.name, false);
+    }
+    
+    document.getElementById("player2ReadyScreen").classList.add("is-hidden");
+    document.getElementById("lobbyScreen").classList.add("is-hidden");
+    document.querySelector(".page").classList.remove("is-hidden");
+    if (!window.gameRoom.startGameSynced) {
+      initializeGameBoard();
+      window.gameRoom.startGameSynced = true;
+    }
+  }
+  
+  // Check if opponent has made a move or board state differs
+  if (gameData.boardState && JSON.stringify(gameData.boardState) !== JSON.stringify(boardState)) {
+    console.log("Syncing remote board state from opponent");
+    
+    // Update local state from remote
+    boardState = gameData.boardState.map(row => row.map(cell => ({ ...cell })));
+    pawnPositions = JSON.parse(JSON.stringify(gameData.pawnPositions || pawnPositions));
+    phase = gameData.phase || "move";
+    currentPlayer = gameData.currentPlayer || "p1";
+    selectedCell = null; // Clear local selection when receiving remote update
+    scores = { ...scores, ...gameData.scores };
+    gameOver = gameData.gameOver || false;
+    
+    renderBoard();
+    updateBoardPerspective();
+    
+    if (gameOver) {
+      const winnerKey = currentPlayer === "p1" ? "p2" : "p1";
+      showWin(winnerKey);
+    }
+  } else if (gameData.currentPlayer && gameData.currentPlayer !== currentPlayer) {
+    // Just the turn changed, update it
+    console.log("Turn switched to:", gameData.currentPlayer);
+    currentPlayer = gameData.currentPlayer;
+    phase = gameData.phase || "move";  // Also update phase when turn changes
+    selectedCell = null;
+    scores = { ...scores, ...gameData.scores };
+    renderBoard();
+    updateBoardPerspective();
+  }
+  
+  // ALWAYS update status to reflect current turn state
+  updateScores();
+  updateActivePlayer();
+  if (!gameOver) {
+    if (isOnlineMode && !window.gameRoom.isCurrentPlayerLocal(currentPlayer)) {
+      updateStatus("Rakibinizin sırası bekleniyor.");
+    } else {
+      updateStatus("Oyuncu taşını seç ve hareket et.");
+    }
+  }
+});
+
+window.addEventListener("gameDeleted", () => {
+  if (isOnlineMode) {
+    alert("Oyun sona erdi. Rakibiniz ayrıldı.");
+    location.reload();
+  }
+});
+
+// Note: resetGame() is called from firebase-game.js or from local play button, not here
+// This ensures online mode is properly initialized before game starts
