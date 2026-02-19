@@ -11,6 +11,8 @@
   --glow: rgba(214, 58, 53, 0.35);
   --tray: #1c1f24;
   --tray-edge: #30343a;
+  --container-dark: #15181d;
+  --container-light: rgba(255, 255, 255, 0.85);
 }
 
 * {
@@ -46,8 +48,8 @@ body:not(.dark-mode) .player-box {
 
 body:not(.dark-mode) .player-box.is-active {
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 20px rgba(214, 58, 53, 0.4), inset 0 0 0 1px rgba(214, 58, 53, 0.3);
-  border-color: rgba(214, 58, 53, 0.5);
+  box-shadow: 0 0 20px var(--glow), inset 0 0 0 1px var(--glow);
+  border-color: var(--accent-1);
 }
 
 body:not(.dark-mode) .player-label {
@@ -59,7 +61,7 @@ body:not(.dark-mode) .player-name {
 }
 
 body:not(.dark-mode) .board-wrap {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--container-light);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
@@ -113,7 +115,7 @@ body:not(.dark-mode) .player-input {
 }
 
 body:not(.dark-mode) .player-input:focus {
-  border-color: rgba(214, 58, 53, 0.6);
+  border-color: var(--accent-1);
   background: rgba(255, 255, 255, 1);
 }
 
@@ -127,7 +129,7 @@ body:not(.dark-mode) .help-button:hover {
 }
 
 body:not(.dark-mode) .top-bar {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--container-light);
   color: var(--ink);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
@@ -168,12 +170,12 @@ body:not(.dark-mode) .settings-option {
 
 body:not(.dark-mode) .settings-option:hover {
   background: rgba(0, 0, 0, 0.08);
-  border-color: rgba(214, 58, 53, 0.4);
+  border-color: var(--glow);
 }
 
 body:not(.dark-mode) .settings-option.active {
-  background: #d63a35;
-  border-color: #d63a35;
+  background: var(--accent-1);
+  border-color: var(--accent-1);
   color: #ffffff;
 }
 
@@ -189,7 +191,7 @@ body:not(.dark-mode) .settings-audio-button {
 
 body:not(.dark-mode) .settings-audio-button:hover {
   background: rgba(0, 0, 0, 0.12);
-  border-color: rgba(214, 58, 53, 0.4);
+  border-color: var(--glow);
 }
 
 body:not(.dark-mode) .help-footer {
@@ -230,7 +232,7 @@ body:not(.dark-mode) .board {
   gap: 18px;
   justify-content: space-between;
   align-items: center;
-  background: #15181d;
+  background: var(--container-dark);
   color: #f2f3f5;
   border-radius: 18px;
   padding: 14px 18px;
@@ -300,7 +302,7 @@ h1 {
 }
 
 .board-wrap {
-  background: #15181d;
+  background: var(--container-dark);
   padding: 26px;
   border-radius: 24px;
   box-shadow: 0 30px 60px rgba(10, 8, 12, 0.45);
@@ -373,8 +375,8 @@ h1 {
 
 .player-box.is-active {
   background: rgba(18, 22, 28, 0.95);
-  box-shadow: 0 0 26px rgba(214, 58, 53, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-  border-color: rgba(214, 58, 53, 0.8);
+  box-shadow: 0 0 26px var(--glow), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  border-color: var(--accent-1);
 }
 
 .player-box::before {
@@ -444,8 +446,8 @@ h1 {
 
 .player-input:focus {
   outline: none;
-  border-color: rgba(214, 58, 53, 0.8);
-  box-shadow: 0 0 0 2px rgba(214, 58, 53, 0.25);
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 2px var(--glow);
 }
 .player-score {
   min-width: 34px;
@@ -508,7 +510,7 @@ h1 {
 }
 
 .cell.blockable {
-  box-shadow: inset 0 0 0 2px rgba(214, 58, 53, 0.8);
+  box-shadow: inset 0 0 0 2px var(--accent-1);
 }
 
 .cell.selected {
@@ -534,7 +536,7 @@ h1 {
 }
 
 .cell.barrier {
-  background: #d63a35;
+  background: var(--barrier);
   box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.2);
   cursor: not-allowed;
 }
@@ -679,12 +681,12 @@ h1 {
 
 .settings-option:hover {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(214, 58, 53, 0.5);
+  border-color: var(--accent-1);
 }
 
 .settings-option.active {
-  background: #d63a35;
-  border-color: #d63a35;
+  background: var(--accent-1);
+  border-color: var(--accent-1);
   color: #f2f3f5;
 }
 
@@ -701,7 +703,7 @@ h1 {
 
 .settings-slider {
   width: 100%;
-  accent-color: #d63a35;
+  accent-color: var(--accent-1);
 }
 
 .settings-audio-button {
@@ -718,7 +720,7 @@ h1 {
 
 .settings-audio-button:hover {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(214, 58, 53, 0.5);
+  border-color: var(--accent-1);
 }
 
 .mute-icon {
@@ -736,7 +738,7 @@ h1 {
   position: absolute;
   width: 1.6em;
   height: 2px;
-  background: #d63a35;
+  background: var(--accent-1);
   transform: rotate(-35deg);
   border-radius: 2px;
 }
@@ -754,6 +756,37 @@ h1 {
 
 .settings-audio-button.is-dark .dark-mode-icon {
   filter: brightness(1.2);
+}
+
+.color-picker {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.active {
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+body:not(.dark-mode) .color-option.active {
+  border-color: rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 .legend-row {

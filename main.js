@@ -107,7 +107,7 @@ function updateDarkMode() {
   darkModeToggle.classList.toggle("is-dark", isDarkMode);
   const icon = darkModeToggle.querySelector(".dark-mode-icon");
   if (icon) {
-    icon.textContent = isDarkMode ? "☀️" : "🌙";
+    icon.textContent = isDarkMode ? "🌙" : "☀️";
   }
 }
 
@@ -883,6 +883,90 @@ if (darkModeToggle) {
     }
   });
 }
+
+// Color theme system
+const colorThemes = {
+  red: {
+    accent1: '#d63a35',
+    accent2: '#b52c28',
+    barrier: '#d63a35',
+    glow: 'rgba(214, 58, 53, 0.35)',
+    container: '#15181d',
+    containerLight: 'rgba(255, 255, 255, 0.85)'
+  },
+  blue: {
+    accent1: '#3b82f6',
+    accent2: '#2563eb',
+    barrier: '#3b82f6',
+    glow: 'rgba(59, 130, 246, 0.35)',
+    container: '#1e293b',
+    containerLight: 'rgba(219, 234, 254, 0.85)'
+  },
+  green: {
+    accent1: '#10b981',
+    accent2: '#059669',
+    barrier: '#10b981',
+    glow: 'rgba(16, 185, 129, 0.35)',
+    container: '#1e3a34',
+    containerLight: 'rgba(209, 250, 229, 0.85)'
+  },
+  purple: {
+    accent1: '#a855f7',
+    accent2: '#9333ea',
+    barrier: '#a855f7',
+    glow: 'rgba(168, 85, 247, 0.35)',
+    container: '#2e1a47',
+    containerLight: 'rgba(243, 232, 255, 0.85)'
+  },
+  amber: {
+    accent1: '#f59e0b',
+    accent2: '#d97706',
+    barrier: '#f59e0b',
+    glow: 'rgba(245, 158, 11, 0.35)',
+    container: '#3a2e1a',
+    containerLight: 'rgba(254, 243, 199, 0.85)'
+  }
+};
+
+let currentTheme = 'red';
+
+function applyTheme(themeName) {
+  const theme = colorThemes[themeName];
+  if (!theme) return;
+  
+  const root = document.documentElement;
+  root.style.setProperty('--accent-1', theme.accent1);
+  root.style.setProperty('--accent-2', theme.accent2);
+  root.style.setProperty('--barrier', theme.barrier);
+  root.style.setProperty('--glow', theme.glow);
+  root.style.setProperty('--container-dark', theme.container);
+  root.style.setProperty('--container-light', theme.containerLight);
+  
+  document.querySelectorAll('.color-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === themeName);
+  });
+  
+  currentTheme = themeName;
+}
+
+// Initialize theme from localStorage
+const storedTheme = localStorage.getItem('abluka.theme');
+if (storedTheme && colorThemes[storedTheme]) {
+  applyTheme(storedTheme);
+}
+
+// Add event listeners to color options
+document.querySelectorAll('.color-option').forEach(button => {
+  button.addEventListener('click', () => {
+    const theme = button.dataset.theme;
+    applyTheme(theme);
+    try {
+      localStorage.setItem('abluka.theme', theme);
+    } catch (error) {
+      // Ignore storage failures.
+    }
+  });
+});
 
 if (winClose) {
   winClose.addEventListener("click", closeWin);
